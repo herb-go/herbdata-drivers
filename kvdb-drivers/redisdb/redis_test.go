@@ -2,6 +2,7 @@ package redisdb
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/herb-go/herbdata/kvdb"
@@ -24,5 +25,5 @@ func TestDriver(t *testing.T) {
 		conn.Send("FLUSHDB")
 		return d
 	},
-		t.Fatal)
+		func(args ...interface{}) { fmt.Println(args...); panic("fatal") })
 }

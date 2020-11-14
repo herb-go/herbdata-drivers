@@ -2,6 +2,7 @@ package freecachedb
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/coocood/freecache"
@@ -19,7 +20,7 @@ func TestDriver(t *testing.T) {
 		}
 		return d
 	},
-		t.Fatal)
+		func(args ...interface{}) { fmt.Println(args...); panic("fatal") })
 }
 
 func TestError(t *testing.T) {
