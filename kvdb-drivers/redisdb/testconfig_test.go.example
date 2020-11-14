@@ -6,7 +6,7 @@ var testConfig = `{
             "Address": "127.0.0.1:6379",
             "Password": "123456",
             "Name":"Cache",
-            "Db": 1,
+            "Db": 0,
             "ConnectTimeout": 60,
             "ReadTimeoutInSecond": 60,
             "WriteTimeoutInSecond": 60,
