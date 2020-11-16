@@ -20,6 +20,8 @@ func (d *Driver) Features() kvdb.Feature {
 		kvdb.FeatureUpdate |
 		kvdb.FeatureCounter |
 		kvdb.FeatureTTLStore |
+		kvdb.FeatureTTLInsert |
+		kvdb.FeatureTTLUpdate |
 		kvdb.FeatureTTLCounter |
 		kvdb.FeaturePersistent |
 		kvdb.FeatureStable
@@ -151,6 +153,27 @@ func (d *Driver) DeleteCounter(key []byte) error {
 	return convertError(err)
 }
 
+//InsertWithTTL insert value with given key and ttl in second.
+//Insert will fail if data with given key exists.
+//Return if operation success and any error if raised
+func (d *Driver) InsertWithTTL(key []byte, value []byte, ttlInSecond int64) (bool, error) {
+	if ttlInSecond < 0 {
+		return false, herbdata.ErrInvalidatedTTL
+	}
+	conn := d.Pool.Get()
+	defer conn.Close()
+	_, err := redis.String(conn.Do("SET", d.getKey(key), value, "EX", ttlInSecond, "NX"))
+	err = convertError(err)
+	if err == herbdata.ErrNotFound {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+
+}
+
 //Update update value with given key.
 //Update will fail if data with given key does nto exist.
 //Return if operation success and any error if raised
@@ -158,6 +181,26 @@ func (d *Driver) Update(key []byte, value []byte) (bool, error) {
 	conn := d.Pool.Get()
 	defer conn.Close()
 	_, err := redis.String(conn.Do("SET", d.getKey(key), value, "XX"))
+	err = convertError(err)
+	if err == herbdata.ErrNotFound {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+//UpdateWithTTL update value with given key and ttl in second.
+//Update will fail if data with given key does nto exist.
+//Return if operation success and any error if raised
+func (d *Driver) UpdateWithTTL(key []byte, value []byte, ttlInSecond int64) (bool, error) {
+	if ttlInSecond < 0 {
+		return false, herbdata.ErrInvalidatedTTL
+	}
+	conn := d.Pool.Get()
+	defer conn.Close()
+	_, err := redis.String(conn.Do("SET", d.getKey(key), value, "EX", ttlInSecond, "XX"))
 	err = convertError(err)
 	if err == herbdata.ErrNotFound {
 		return false, nil
