@@ -9,8 +9,9 @@ import (
 
 type Driver struct {
 	kvdb.Nop
-	Pool   *redis.Pool
-	Prefix string
+	Pool    *redis.Pool
+	NoMulti bool
+	Prefix  string
 }
 
 //Features return supported features
@@ -98,6 +99,43 @@ func (d *Driver) IncreaseCounter(key []byte, incr int64) (int64, error) {
 //Value not existed coutn as 0.
 //Return final value and any error if raised.
 func (d *Driver) IncreaseCounterWithTTL(key []byte, incr int64, ttlInSecond int64) (int64, error) {
+	if d.NoMulti {
+		return d.increaseCounterWithTTLNoMulti(key, incr, ttlInSecond)
+	}
+	var err error
+	if ttlInSecond < 0 {
+		return 0, herbdata.ErrInvalidatedTTL
+	}
+	conn := d.Pool.Get()
+	defer conn.Close()
+	_, err = conn.Do("Multi")
+	if err != nil {
+		return 0, err
+	}
+	err = conn.Send("INCRBY", d.getCounterKey(key), incr)
+	err = convertError(err)
+	if err != nil {
+		return 0, err
+	}
+	err = conn.Send("EXPIRE", d.getCounterKey(key), ttlInSecond)
+	err = convertError(err)
+	if err != nil {
+		return 0, err
+	}
+	var data int64
+	result, err := redis.Values(conn.Do("Exec"))
+	if err != nil {
+		return 0, err
+	}
+	_, err = redis.Scan(result, &data)
+	if err != nil {
+		return 0, err
+	}
+
+	return data, nil
+}
+
+func (d *Driver) increaseCounterWithTTLNoMulti(key []byte, incr int64, ttlInSecond int64) (int64, error) {
 	if ttlInSecond < 0 {
 		return 0, herbdata.ErrInvalidatedTTL
 	}
@@ -115,6 +153,7 @@ func (d *Driver) IncreaseCounterWithTTL(key []byte, incr int64, ttlInSecond int6
 		return 0, err
 	}
 	return data, nil
+
 }
 
 //SetCounterWithTTL set counter value with given key and ttl in second
@@ -234,7 +273,8 @@ func new() *Driver {
 
 type Config struct {
 	redispool.Config
-	Prefix string
+	Prefix  string
+	NoMulti bool
 }
 
 func convertError(err error) error {
@@ -255,6 +295,8 @@ func (c *Config) CreateDriver() (kvdb.Driver, error) {
 		return nil, err
 	}
 	d := new()
+	d.Prefix = c.Prefix
+	d.NoMulti = c.NoMulti
 	d.Pool = p.Open()
 	return d, nil
 }
