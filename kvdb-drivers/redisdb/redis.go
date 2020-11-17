@@ -68,7 +68,7 @@ func (d *Driver) Delete(key []byte) error {
 
 //SetWithTTL set value by given key and ttl in second
 func (d *Driver) SetWithTTL(key []byte, value []byte, ttlInSecond int64) error {
-	if ttlInSecond < 0 {
+	if ttlInSecond <= 0 {
 		return herbdata.ErrInvalidatedTTL
 	}
 	conn := d.Pool.Get()
@@ -103,7 +103,7 @@ func (d *Driver) IncreaseCounterWithTTL(key []byte, incr int64, ttlInSecond int6
 		return d.increaseCounterWithTTLNoMulti(key, incr, ttlInSecond)
 	}
 	var err error
-	if ttlInSecond < 0 {
+	if ttlInSecond <= 0 {
 		return 0, herbdata.ErrInvalidatedTTL
 	}
 	conn := d.Pool.Get()
@@ -136,7 +136,7 @@ func (d *Driver) IncreaseCounterWithTTL(key []byte, incr int64, ttlInSecond int6
 }
 
 func (d *Driver) increaseCounterWithTTLNoMulti(key []byte, incr int64, ttlInSecond int64) (int64, error) {
-	if ttlInSecond < 0 {
+	if ttlInSecond <= 0 {
 		return 0, herbdata.ErrInvalidatedTTL
 	}
 	conn := d.Pool.Get()
@@ -158,7 +158,7 @@ func (d *Driver) increaseCounterWithTTLNoMulti(key []byte, incr int64, ttlInSeco
 
 //SetCounterWithTTL set counter value with given key and ttl in second
 func (d *Driver) SetCounterWithTTL(key []byte, value int64, ttlInSecond int64) error {
-	if ttlInSecond < 0 {
+	if ttlInSecond <= 0 {
 		return herbdata.ErrInvalidatedTTL
 	}
 	conn := d.Pool.Get()
@@ -196,7 +196,7 @@ func (d *Driver) DeleteCounter(key []byte) error {
 //Insert will fail if data with given key exists.
 //Return if operation success and any error if raised
 func (d *Driver) InsertWithTTL(key []byte, value []byte, ttlInSecond int64) (bool, error) {
-	if ttlInSecond < 0 {
+	if ttlInSecond <= 0 {
 		return false, herbdata.ErrInvalidatedTTL
 	}
 	conn := d.Pool.Get()
@@ -234,7 +234,7 @@ func (d *Driver) Update(key []byte, value []byte) (bool, error) {
 //Update will fail if data with given key does nto exist.
 //Return if operation success and any error if raised
 func (d *Driver) UpdateWithTTL(key []byte, value []byte, ttlInSecond int64) (bool, error) {
-	if ttlInSecond < 0 {
+	if ttlInSecond <= 0 {
 		return false, herbdata.ErrInvalidatedTTL
 	}
 	conn := d.Pool.Get()

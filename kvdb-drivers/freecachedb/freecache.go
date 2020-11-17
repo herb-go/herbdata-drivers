@@ -35,7 +35,7 @@ func (d *Driver) Set(key []byte, value []byte) error {
 
 //SetWithTTL set value by given key and ttl in second.
 func (d *Driver) SetWithTTL(key []byte, value []byte, ttlInSecond int64) error {
-	if ttlInSecond < 0 {
+	if ttlInSecond <= 0 {
 		return herbdata.ErrInvalidatedTTL
 	}
 	return convertError(d.fc.Set(key, value, int(ttlInSecond)))
