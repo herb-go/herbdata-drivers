@@ -73,3 +73,17 @@ func (c *Config) CreateDriver() (kvdb.Driver, error) {
 	d.fc = fc
 	return d, nil
 }
+
+//Factory driver factory
+func Factory(loader func(v interface{}) error) (kvdb.Driver, error) {
+	c := &Config{}
+	err := loader(c)
+	if err != nil {
+		return nil, err
+	}
+	return c.CreateDriver()
+}
+
+func init() {
+	kvdb.Register("freecache", Factory)
+}

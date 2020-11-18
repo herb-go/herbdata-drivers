@@ -300,3 +300,17 @@ func (c *Config) CreateDriver() (kvdb.Driver, error) {
 	d.Pool = p.Open()
 	return d, nil
 }
+
+//Factory driver factory
+func Factory(loader func(v interface{}) error) (kvdb.Driver, error) {
+	c := &Config{}
+	err := loader(c)
+	if err != nil {
+		return nil, err
+	}
+	return c.CreateDriver()
+}
+
+func init() {
+	kvdb.Register("redis", Factory)
+}
