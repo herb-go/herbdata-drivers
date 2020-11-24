@@ -14,18 +14,32 @@ type Driver struct {
 	Prefix  string
 }
 
+var FullFeatures = kvdb.FeatureStore |
+	kvdb.FeatureInsert |
+	kvdb.FeatureUpdate |
+	kvdb.FeatureCounter |
+	kvdb.FeatureTTLStore |
+	kvdb.FeatureTTLInsert |
+	kvdb.FeatureTTLUpdate |
+	kvdb.FeatureTTLCounter |
+	kvdb.FeaturePersistent |
+	kvdb.FeatureStable
+var NoMutliFeatures = kvdb.FeatureStore |
+	kvdb.FeatureInsert |
+	kvdb.FeatureUpdate |
+	kvdb.FeatureCounter |
+	kvdb.FeatureTTLStore |
+	kvdb.FeatureTTLInsert |
+	kvdb.FeatureTTLUpdate |
+	kvdb.FeaturePersistent |
+	kvdb.FeatureStable
+
 //Features return supported features
 func (d *Driver) Features() kvdb.Feature {
-	return kvdb.FeatureStore |
-		kvdb.FeatureInsert |
-		kvdb.FeatureUpdate |
-		kvdb.FeatureCounter |
-		kvdb.FeatureTTLStore |
-		kvdb.FeatureTTLInsert |
-		kvdb.FeatureTTLUpdate |
-		kvdb.FeatureTTLCounter |
-		kvdb.FeaturePersistent |
-		kvdb.FeatureStable
+	if d.NoMulti {
+		return NoMutliFeatures
+	}
+	return FullFeatures
 }
 
 // Close close database
@@ -100,7 +114,7 @@ func (d *Driver) IncreaseCounter(key []byte, incr int64) (int64, error) {
 //Return final value and any error if raised.
 func (d *Driver) IncreaseCounterWithTTL(key []byte, incr int64, ttlInSecond int64) (int64, error) {
 	if d.NoMulti {
-		return d.increaseCounterWithTTLNoMulti(key, incr, ttlInSecond)
+		return 0, kvdb.ErrFeatureNotSupported
 	}
 	var err error
 	if ttlInSecond <= 0 {
@@ -133,27 +147,6 @@ func (d *Driver) IncreaseCounterWithTTL(key []byte, incr int64, ttlInSecond int6
 	}
 
 	return data, nil
-}
-
-func (d *Driver) increaseCounterWithTTLNoMulti(key []byte, incr int64, ttlInSecond int64) (int64, error) {
-	if ttlInSecond <= 0 {
-		return 0, herbdata.ErrInvalidatedTTL
-	}
-	conn := d.Pool.Get()
-	defer conn.Close()
-
-	data, err := redis.Int64(conn.Do("INCRBY", d.getCounterKey(key), incr))
-	err = convertError(err)
-	if err != nil {
-		return 0, err
-	}
-	_, err = conn.Do("EXPIRE", d.getCounterKey(key), ttlInSecond)
-	err = convertError(err)
-	if err != nil {
-		return 0, err
-	}
-	return data, nil
-
 }
 
 //SetCounterWithTTL set counter value with given key and ttl in second
