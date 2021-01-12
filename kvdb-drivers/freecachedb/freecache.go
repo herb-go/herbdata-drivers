@@ -56,7 +56,9 @@ func (d *Driver) Delete(key []byte) error {
 //Features return supported features
 func (d *Driver) Features() kvdb.Feature {
 	return kvdb.FeatureTTLStore |
-		kvdb.FeatureStore
+		kvdb.FeatureStore |
+		kvdb.FeatureEmbedded
+
 }
 
 func new() *Driver {
