@@ -2,6 +2,7 @@ package leveldb
 
 import (
 	"bytes"
+	"errors"
 
 	"github.com/herb-go/herbdata"
 	"github.com/herb-go/herbdata/kvdb"
@@ -200,6 +201,9 @@ func Factory(loader func(v interface{}) error) (kvdb.Driver, error) {
 	err := loader(c)
 	if err != nil {
 		return nil, err
+	}
+	if c.Database == "" {
+		return nil, errors.New("leveldb: database path required")
 	}
 	return c.CreateDriver()
 }
