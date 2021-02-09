@@ -15,7 +15,6 @@ import (
 
 const Features = kvdb.FeatureStore |
 	kvdb.FeatureTTLStore |
-	kvdb.FeaturePersistent |
 	kvdb.FeatureNext |
 	kvdb.FeaturePrev |
 	kvdb.FeatureEmbedded
@@ -37,6 +36,7 @@ type Driver struct {
 	kvdb.Nop
 	GCInterval time.Duration
 	Database   string
+	InMemory   bool
 	DB         *badger.DB
 	Ticker     *time.Ticker
 	GCLevel    float64
@@ -50,12 +50,18 @@ func (d *Driver) SetErrorHanlder(f func(error)) {
 //Start start database
 func (d *Driver) Start() error {
 	var err error
-	d.DB, err = badger.Open(badger.DefaultOptions(d.Database))
+	if !d.InMemory {
+		d.DB, err = badger.Open(badger.DefaultOptions(d.Database))
+	} else {
+		d.DB, err = badger.Open(badger.DefaultOptions("").WithInMemory(true))
+	}
 	if err != nil {
 		return err
 	}
-	d.Ticker = time.NewTicker(d.GCInterval)
-	go d.startGC()
+	if !d.InMemory {
+		d.Ticker = time.NewTicker(d.GCInterval)
+		go d.startGC()
+	}
 	return nil
 }
 func (d *Driver) startGC() {
@@ -84,7 +90,9 @@ func (d *Driver) Stop() error {
 		}
 		return err
 	}
-	d.Ticker.Stop()
+	if !d.InMemory {
+		d.Ticker.Stop()
+	}
 	return nil
 }
 
@@ -253,7 +261,10 @@ func (d *Driver) Prev(iter []byte, limit int) (result []*herbdata.KeyValue, newi
 
 //Features return supported features
 func (d *Driver) Features() kvdb.Feature {
-	return Features
+	if d.InMemory {
+		return Features
+	}
+	return Features | kvdb.FeaturePersistent
 }
 
 //NewDriver create new driver
@@ -268,6 +279,7 @@ func NewDriver() *Driver {
 type Config struct {
 	Database           string
 	GCIntervalDuration string
+	InMemory           bool
 }
 
 func (c *Config) ApplyTo(d *Driver) error {
@@ -275,6 +287,9 @@ func (c *Config) ApplyTo(d *Driver) error {
 	return nil
 }
 func (c *Config) CreateDriver() (kvdb.Driver, error) {
+	if !c.InMemory && c.Database == "" {
+		return nil, errors.New("badgerdb: database path required")
+	}
 	d := NewDriver()
 	err := c.ApplyTo(d)
 	if err != nil {
@@ -298,9 +313,6 @@ func Factory(loader func(v interface{}) error) (kvdb.Driver, error) {
 	err := loader(c)
 	if err != nil {
 		return nil, err
-	}
-	if c.Database == "" {
-		return nil, errors.New("badgerdb: database path required")
 	}
 	return c.CreateDriver()
 }
