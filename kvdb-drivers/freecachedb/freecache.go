@@ -57,6 +57,8 @@ func (d *Driver) Delete(key []byte) error {
 func (d *Driver) Features() kvdb.Feature {
 	return kvdb.FeatureTTLStore |
 		kvdb.FeatureStore |
+		kvdb.FeatureUnstable |
+		kvdb.FeatureNonpersistent |
 		kvdb.FeatureEmbedded
 
 }

@@ -21,18 +21,14 @@ var FullFeatures = kvdb.FeatureStore |
 	kvdb.FeatureTTLStore |
 	kvdb.FeatureTTLInsert |
 	kvdb.FeatureTTLUpdate |
-	kvdb.FeatureTTLCounter |
-	kvdb.FeaturePersistent |
-	kvdb.FeatureStable
+	kvdb.FeatureTTLCounter
 var NoMutliFeatures = kvdb.FeatureStore |
 	kvdb.FeatureInsert |
 	kvdb.FeatureUpdate |
 	kvdb.FeatureCounter |
 	kvdb.FeatureTTLStore |
 	kvdb.FeatureTTLInsert |
-	kvdb.FeatureTTLUpdate |
-	kvdb.FeaturePersistent |
-	kvdb.FeatureStable
+	kvdb.FeatureTTLUpdate
 
 //Features return supported features
 func (d *Driver) Features() kvdb.Feature {

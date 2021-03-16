@@ -11,7 +11,6 @@ import (
 )
 
 const Features = kvdb.FeatureStore |
-	kvdb.FeaturePersistent |
 	kvdb.FeatureNext |
 	kvdb.FeaturePrev |
 	kvdb.FeatureEmbedded
